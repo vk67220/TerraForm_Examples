@@ -1,0 +1,52 @@
+name: Terraform S3 Bucket Creation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # REQUIRED for AWS OIDC
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  terraform:
+    name: Deploy S3 Bucket using Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Configure AWS Credentials using OIDC
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::597918493080:role/github-oidc-selfhosted-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Verify identity
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      # Install Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Terraform Init
+      - name: Terraform Init
+        run: terraform init
+
+      # Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
+
+      # Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan
+
+      # Terraform Apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
