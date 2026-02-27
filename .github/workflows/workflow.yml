@@ -1,45 +1,53 @@
-name: Terraform S3 Bucket Creation
+name: Terraform Deployment Pipeline
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose Terraform Action"
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
 
 permissions:
   contents: read
-  id-token: write   # REQUIRED for AWS OIDC
+  id-token: write   # Required for AWS OIDC
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
   terraform:
-    name: Deploy S3 Bucket using Terraform
+    name: Terraform Apply or Destroy
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository code
+      # Checkout repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Configure AWS Credentials using OIDC
+      # Configure AWS credentials using OIDC
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::597918493080:role/github-oidc-selfhosted-role
           aws-region: ${{ env.AWS_REGION }}
 
-      # Verify identity
+      # Verify AWS authentication
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      # Install Terraform
+      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Terraform Init
+      # Initialize Terraform (uses backend.tf automatically)
       - name: Terraform Init
         run: terraform init
 
-      # Terraform Validate
+      # Validate configuration
       - name: Terraform Validate
         run: terraform validate
 
@@ -47,6 +55,12 @@ jobs:
       - name: Terraform Plan
         run: terraform plan
 
-      # Terraform Apply
+      # Apply Infrastructure
       - name: Terraform Apply
+        if: ${{ github.event.inputs.action == 'apply' }}
         run: terraform apply -auto-approve
+
+      # Destroy Infrastructure
+      - name: Terraform Destroy
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        run: terraform destroy -auto-approve
