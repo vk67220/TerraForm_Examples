@@ -1,4 +1,4 @@
-# Create S3 Bucket
+# Create Project S3 Bucket
 resource "aws_s3_bucket" "project_bucket" {
   bucket = "kasturi-realtime-terraform-bucket-123456"
 
@@ -17,5 +17,3 @@ resource "aws_s3_bucket_versioning" "versioning" {
     status = "Enabled"
   }
 }
-
-
