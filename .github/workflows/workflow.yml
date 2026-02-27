@@ -1,4 +1,4 @@
-name: Terraform Deployment Pipeline
+name: Terraform Deployment (Apply / Destroy)
 
 on:
   workflow_dispatch:
@@ -12,55 +12,47 @@ on:
           - destroy
 
 permissions:
+  id-token: write
   contents: read
-  id-token: write   # Required for AWS OIDC
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
   terraform:
-    name: Terraform Apply or Destroy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # or [self-hosted, terraform]
 
     steps:
-      # Checkout repository
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Configure AWS credentials using OIDC
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::597918493080:role/github-oidc-selfhosted-role
+          role-to-assume: arn:aws:iam::597918493080:role/github-oidc-selfhosted-role-01
           aws-region: ${{ env.AWS_REGION }}
 
-      # Verify AWS authentication
       - name: Verify AWS Identity
         run: aws sts get-caller-identity
 
-      # Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # Initialize Terraform (uses backend.tf automatically)
       - name: Terraform Init
         run: terraform init
 
-      # Validate configuration
       - name: Terraform Validate
         run: terraform validate
 
-      # Terraform Plan
       - name: Terraform Plan
         run: terraform plan
 
-      # Apply Infrastructure
+      # Apply Step
       - name: Terraform Apply
         if: ${{ github.event.inputs.action == 'apply' }}
         run: terraform apply -auto-approve
 
-      # Destroy Infrastructure
+      # Destroy Step
       - name: Terraform Destroy
         if: ${{ github.event.inputs.action == 'destroy' }}
         run: terraform destroy -auto-approve
